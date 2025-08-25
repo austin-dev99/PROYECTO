@@ -6,6 +6,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 
 
 @SpringBootApplication
@@ -22,6 +24,10 @@ public class OperadorServiceApplication {
     public RestTemplate restTemplate() {   // <- usa Eureka
         return new RestTemplate();
     }
+
+
+
+    Java
     @Bean
     CommandLineRunner checkEnv(org.springframework.core.env.Environment env) {
         return args -> {
@@ -33,5 +39,6 @@ public class OperadorServiceApplication {
             System.out.println(">>> spring.datasource.password.length=" + (pass == null ? 0 : pass.length()));
         };
     }
+
 
 }
