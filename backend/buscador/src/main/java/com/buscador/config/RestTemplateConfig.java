@@ -4,10 +4,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
+
 @Configuration
 public class RestTemplateConfig {
-    @Bean
-    public RestTemplate restTemplate() {
+
+    @Bean(name = "operadorRest")
+    public RestTemplate operadorRest() {
+        return new RestTemplate();
+    }
+
+    @Bean(name = "elasticRest")
+    public RestTemplate elasticRest() {
         return new RestTemplate();
     }
 }

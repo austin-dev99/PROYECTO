@@ -32,8 +32,8 @@ public class IndexService {
     private String elasticApiKey;
 
     public IndexService(
-            @Qualifier("eurekaRestTemplate") RestTemplate operadorRest,
-            @Qualifier("plainRestTemplate") RestTemplate elasticRest
+            @Qualifier("operadorRest") RestTemplate operadorRest,
+            @Qualifier("elasticRest") RestTemplate elasticRest
     ) {
         this.operadorRest = operadorRest;
         this.elasticRest = elasticRest;
