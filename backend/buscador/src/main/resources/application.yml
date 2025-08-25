@@ -15,9 +15,9 @@ eureka:
 #  password: ${ELASTICSEARCH_PASSWORD:}
 
   elasticsearch:
-    uris: ${ELASTICSEARCH_HOST}
+    url: ${ELASTICSEARCH_HOST}
     username: elastic       # <- normalmente Elastic genera un usuario "elastic"
-    password: ${ELASTIC_API_KEY}   # o el apiKey si estás usando "ApiKey auth"
+    apiKey: ${ELASTIC_API_KEY}   # o el apiKey si estás usando "ApiKey auth"
 
 app:
   cors:
