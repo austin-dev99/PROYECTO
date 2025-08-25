@@ -2,19 +2,15 @@ server:
   port: 8082
 
 spring:
-  application:
-    name: operador
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      minimum-idle: 2
-      maximum-pool-size: 8
   jpa:
     hibernate:
-      ddl-auto: update  # luego cambia a validate o none
+      ddl-auto: update
+    open-in-view: false
     properties:
       hibernate.dialect: org.hibernate.dialect.MySQLDialect  # Versión nueva, no MySQL8Dialect
     open-in-view: false
