@@ -5,15 +5,18 @@ spring:
   application:
     name: buscador
 
-# Desactivado Eureka
 eureka:
   client:
     enabled: false
 
 elasticsearch:
-  host: ${ELASTICSEARCH_HOST}   # ej: https://xxxxx.europe-west3.gcp.cloud.es.io (ejemplo)
-  apiKey: ${ELASTIC_API_KEY:}   # opcional, si usas API Key
+  host: ${ELASTICSEARCH_HOST:http://localhost:9200}
+  user: ${ELASTICSEARCH_USER:}
+  password: ${ELASTICSEARCH_PASSWORD:}
 
 operador:
-  baseUrl: ${OPERADOR_URL}      # URL pública de operador o del gateway si enrutas vía gateway
-   # URL pública de operador o del gateway si enrutas vía gateway
+  base-url: ${OPERADOR_BASE_URL:http://localhost:8082}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}

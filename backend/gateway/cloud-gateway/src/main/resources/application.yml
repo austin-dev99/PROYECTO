@@ -1,26 +1,27 @@
 server:
   port: ${PORT:8080}
 
-eureka:
-  client:
-    enabled: false
 spring:
   application:
     name: gateway
 
-  spring:
-    cloud:
-      gateway:
-        routes:
-          - id: operador
-            uri: ${OPERADOR_URL}
-            predicates:
-              - Path=/operador/**
-            filters:
-              - StripPrefix=1
-          - id: buscador
-            uri: ${BUSCADOR_URL}
-            predicates:
-              - Path=/buscador/**
-            filters:
-              - StripPrefix=1
+  cloud:
+    gateway:
+      routes:
+        - id: operador
+          uri: ${OPERADOR_URL}
+          predicates:
+            - Path=/operador/**
+          filters:
+            - StripPrefix=1
+
+        - id: buscador
+          uri: ${BUSCADOR_URL}
+          predicates:
+            - Path=/buscador/**
+          filters:
+            - StripPrefix=1
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
