@@ -4,24 +4,29 @@ server:
 spring:
   application:
     name: operador
-
-
-
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 8
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update  # luego cambia a validate o none
+    properties:
+      hibernate.dialect: org.hibernate.dialect.MySQLDialect  # Versión nueva, no MySQL8Dialect
+    open-in-view: false
     show-sql: false
 
-# CORS simple (ajusta con tu dominio de Vercel luego)
+# Si tienes CORS configurado, mantén esto:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
 
-
-eureka:
-  client:
-    enabled: false
+# Logs para ver lo que ocurre
+logging:
+  level:
+    com.zaxxer.hikari: DEBUG  # Quitar después, o cambiar a INFO
+    org.hibernate.SQL: DEBUG  # Quitar después
