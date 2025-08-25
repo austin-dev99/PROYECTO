@@ -25,5 +25,5 @@ app:
 
 
   services:
-    operador: ${APP_OPERADOR_URL}
+    operador: ${OPERADOR_URL}
     gateway: ${GATEWAY_URL}

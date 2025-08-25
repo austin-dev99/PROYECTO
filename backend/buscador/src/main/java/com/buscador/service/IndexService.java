@@ -23,11 +23,13 @@ public class IndexService {
 
 
     // Valores leídos de variables de entorno (application.yml o Railway ENV)
-    @Value("${app.operador.url}")
-    private String operadorUrl;
 
     @Value("${app.elasticsearch.url}")
     private String elasticUrl;
+    @Value("${app.operador.url}")
+    private String operadorUrl;
+    @Value("${app.elasticsearch.apiKey}")
+    private String elasticApiKey;
 
     public IndexService(
             @Qualifier("eurekaRestTemplate") RestTemplate operadorRest,
