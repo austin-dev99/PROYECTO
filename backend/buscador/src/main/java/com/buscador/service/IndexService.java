@@ -1,9 +1,26 @@
+package com.buscador.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.List;
+import java.util.Map;
+
 @Service
 public class IndexService {
 
     private final RestTemplate operadorRest;
     private final RestTemplate elasticRest;
     private final ObjectMapper mapper = new ObjectMapper();
+
 
     // Valores leídos de variables de entorno (application.yml o Railway ENV)
     @Value("${app.operador.url}")
