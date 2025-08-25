@@ -29,12 +29,6 @@ public class BuscadorApplication {
 
     @Bean
     @Qualifier("plainRestTemplate")
-    public RestTemplate plainRestTemplate() {
-        return new RestTemplate();
-    }
-
-    @Bean
-    @Qualifier("plainRestTemplate")
     RestTemplate plainRestTemplate(
             RestTemplateBuilder builder,
             @Value("${ELASTICSEARCH_USERNAME:}") String user,

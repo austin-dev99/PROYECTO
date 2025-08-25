@@ -12,8 +12,8 @@ spring:
     # 1 SPRING_DATASOURCE_URL (ya en formato jdbc:mysql://...)
     # 2 Construido con MYSQLHOST / MYSQLPORT / MYSQLDATABASE expuestos por Railway
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://root:hXEdvyGFqEUpLowQmCjKPYiYftWIXYiZ@mysql.railway.internal:3306/railway}
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:hXEdvyGFqEUpLowQmCjKPYiYftWIXYiZ}
+    username: ${SPRING_DATASOURCE_USERNAME:approot}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     properties:
