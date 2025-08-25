@@ -3,29 +3,25 @@ server:
 
 spring:
   application:
-    name: cloud-gateway
+    name: gateway
+
   cloud:
     gateway:
-      globalcors:
-        add-to-simple-url-handler-mapping: true
       routes:
         - id: operador
-          uri: ${OPERADOR_URL:http://localhost:8082}
+          uri: ${OPERADOR_URL}
           predicates:
             - Path=/operador/**
           filters:
             - StripPrefix=1
-
         - id: buscador
-          uri: ${BUSCADOR_URL:http://localhost:8081}
+          uri: ${BUSCADOR_URL}
           predicates:
             - Path=/buscador/**
           filters:
             - StripPrefix=1
 
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health,info"
+# CORS en gateway
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
