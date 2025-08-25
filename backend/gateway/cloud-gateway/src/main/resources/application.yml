@@ -7,23 +7,23 @@ eureka:
 spring:
   application:
     name: gateway
-
   cloud:
     gateway:
-      routes:
-        - id: operador
-          uri: ${OPERADOR_URL}
-          predicates:
-            - Path=/operador/**
-          filters:
-            - StripPrefix=1
-
-        - id: buscador
-          uri: ${BUSCADOR_URL}
-          predicates:
-            - Path=/buscador/**
-          filters:
-            - StripPrefix=1
+      server:
+        webflux:
+          routes:
+            - id: buscador
+              uri: https://buscador-production-f636.up.railway.app
+              predicates:
+                - Path=/buscador/**
+              filters:
+                - StripPrefix=1
+            - id: operador
+              uri: https://operador-production.up.railway.app
+              predicates:
+                - Path=/operador/**
+              filters:
+                - StripPrefix=1
 
 app:
   cors:
