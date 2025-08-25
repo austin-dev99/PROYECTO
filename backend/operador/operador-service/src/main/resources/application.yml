@@ -2,6 +2,8 @@ server:
   port: 8082
 
 spring:
+  application:
+    name: operador
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
@@ -11,18 +13,8 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
-    properties:
-      hibernate.dialect: org.hibernate.dialect.MySQLDialect  # Versión nueva, no MySQL8Dialect
-    open-in-view: false
-    show-sql: false
 
-# Si tienes CORS configurado, mantén esto:
+# CORS configuration
 app:
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
-
-# Logs para ver lo que ocurre
-logging:
-  level:
-    com.zaxxer.hikari: DEBUG  # Quitar después, o cambiar a INFO
-    org.hibernate.SQL: DEBUG  # Quitar después
+    allowed-origins: "*"
