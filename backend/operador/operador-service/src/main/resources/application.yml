@@ -11,12 +11,11 @@ spring:
     # Prioridad:
     # 1 SPRING_DATASOURCE_URL (ya en formato jdbc:mysql://...)
     # 2 Construido con MYSQLHOST / MYSQLPORT / MYSQLDATABASE expuestos por Railway
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${MYSQLHOST:localhost}:${MYSQLPORT:3306}/${MYSQLDATABASE:tienda}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://root:hXEdvyGFqEUpLowQmCjKPYiYftWIXYiZ@mysql.railway.internal:3306/railway}
     username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:rootpass}
+    password: ${SPRING_DATASOURCE_PASSWORD:hXEdvyGFqEUpLowQmCjKPYiYftWIXYiZ}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
-    show-sql: false
     properties:
       hibernate.dialect: org.hibernate.dialect.MySQLDialect
     hibernate:
