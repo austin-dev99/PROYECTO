@@ -1,0 +1,30 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "folding_analyzer": {
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "keyword" },
+      "nombre": {
+        "type": "text",
+        "analyzer": "folding_analyzer",
+        "fields": {
+          "keyword": { "type": "keyword"},
+          "suggest": { "type": "search_as_you_type" }
+        }
+      },
+      "descripcion": { "type": "text", "analyzer": "folding_analyzer" },
+      "categoria": { "type": "keyword" },
+      "precio": { "type": "double" },
+      "imagen": { "type": "keyword" },
+      "subcategoria": { "type": "keyword" }
+    }
+  }
+}
