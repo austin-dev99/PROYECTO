@@ -4,16 +4,15 @@ server:
 spring:
   application:
     name: operador
+
   datasource:
-    url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}
-    username: ${MYSQLUSER:NOT_FOUND}
-    password: ${MYSQLPASSWORD:NOT_FOUND}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
-
+    show-sql: false
 
 # CORS simple (ajusta con tu dominio de Vercel luego)
 app:
