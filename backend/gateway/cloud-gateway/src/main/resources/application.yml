@@ -9,13 +9,13 @@ spring:
     gateway:
       routes:
         - id: operador
-          uri: https://${OPERADOR_HOST}
+          uri: ${OPERADOR_HOST}
           predicates:
             - Path=/operador/**
           filters:
             - StripPrefix=1
         - id: buscador
-          uri: https://${BUSCADOR_HOST}
+          uri: ${BUSCADOR_HOST}
           predicates:
             - Path=/buscador/**
           filters:
