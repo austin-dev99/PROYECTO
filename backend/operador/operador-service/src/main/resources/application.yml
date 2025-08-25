@@ -5,16 +5,15 @@ spring:
   application:
     name: operador
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:mysql://mysql.railway.internal:3306/railway
+    username: userop
+    password: Operador
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
     open-in-view: false
 
-# CORS configuration
 app:
   cors:
     allowed-origins: "*"
