@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.beans.factory.annotation.Value;
 
 @SpringBootApplication
 @EnableDiscoveryClient
@@ -29,6 +31,19 @@ public class BuscadorApplication {
     @Qualifier("plainRestTemplate")
     public RestTemplate plainRestTemplate() {
         return new RestTemplate();
+    }
+
+    @Bean
+    @Qualifier("plainRestTemplate")
+    RestTemplate plainRestTemplate(
+            RestTemplateBuilder builder,
+            @Value("${ELASTICSEARCH_USERNAME:}") String user,
+            @Value("${ELASTICSEARCH_PASSWORD:}") String pass
+    ) {
+        if (user != null && !user.isBlank()) {
+            return builder.basicAuthentication(user, pass).build();
+        }
+        return builder.build();
     }
 
 }
