@@ -40,7 +40,8 @@ public class DataLoader implements CommandLineRunner {
             if (idVal == null) continue;
             p.setId(Long.valueOf(String.valueOf(idVal)));
 
-            p.setNombre(str(m, "nombre", "title", "name"));
+            // incluye 'titulo' de tu JSON
+            p.setNombre(str(m, "nombre", "titulo", "title", "name"));
             p.setCategoria(str(m, "categoria", "category"));
             p.setSubcategoria(str(m, "subcategoria", "subcategory", "subCategoria"));
             p.setDescripcion(str(m, "descripcion", "description", "detalle"));

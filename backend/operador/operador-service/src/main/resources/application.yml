@@ -1,15 +1,24 @@
 server:
-  port: 8082
+  # Railway asigna PORT dinámico. Local usa 8082.
+  port: ${PORT:8082}
 
 spring:
   application:
     name: operador
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    # NO pongas usuario:password en la URL. Formato correcto: jdbc:mysql://host:3306/db
+    # Prioridad:
+    # 1 SPRING_DATASOURCE_URL (ya en formato jdbc:mysql://...)
+    # 2 Construido con MYSQLHOST / MYSQLPORT / MYSQLDATABASE expuestos por Railway
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${MYSQLHOST:localhost}:${MYSQLPORT:3306}/${MYSQLDATABASE:tienda}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:rootpass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
+    show-sql: false
+    properties:
+      hibernate.dialect: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
     show-sql: false
