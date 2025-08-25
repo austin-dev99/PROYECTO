@@ -1,0 +1,27 @@
+server:
+  port: 8081   # puerto del buscador (puedes cambiarlo)
+
+spring:
+  application:
+    name: buscador
+    elasticsearch:
+      uris: ${ELASTICSEARCH_URI:http://elasticsearch:9200}
+
+  # conexión a Elasticsearch (ajusta host/puerto si tu docker expone otro)
+  # URL de Elasticsearch (lo usaremos desde el controller)
+eureka:
+  client:
+    enabled: false
+
+
+elasticsearch:
+  host: ${ELASTICSEARCH_URI:http://elasticsearch:9200}
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+

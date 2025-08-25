@@ -1,0 +1,148 @@
+version: "3.8"
+
+services:
+  # --- Base de datos ---
+  mysql:
+    image: mysql:8.0
+    container_name: mysql8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: tienda
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppass
+    command: ["--default-authentication-plugin=mysql_native_password", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - elastic
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    ports:
+      - "8083:8080"
+    depends_on:
+      - mysql
+    networks:
+      - elastic
+
+  # --- Elasticsearch + Kibana ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - elastic
+    depends_on:
+      - elasticsearch
+    networks:
+        - elastic
+
+  # --- Script para crear el índice automáticamente ---
+  es-setup:
+    image: curlimages/curl:8.10.1
+    container_name: es-setup
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./mapping.json:/mapping.json
+    entrypoint: >
+      sh -c "echo 'Esperando que Elasticsearch arranque...' &&
+      sleep 25 &&
+      curl -X DELETE http://elasticsearch:9200/productos || true &&
+      curl -H 'Content-Type: application/json' -X PUT http://elasticsearch:9200/productos --data-binary @/mapping.json &&
+      echo '✅ Índice productos creado con mapping.json'"
+    networks:
+      - elastic
+
+  # --- Eureka ---
+  eureka-server:
+    build: ../backend/eureka/eureka-server
+    container_name: eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - elastic
+
+  # --- Gateway ---
+  cloud-gateway:
+    build: ../backend/gateway/cloud-gateway
+    container_name: gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    environment:
+      - EUREKA_URI=http://eureka:8761/eureka
+    networks:
+      - elastic
+
+  # --- Operador ---
+  operador:
+    build: ../backend/operador/operador-service
+    container_name: operador
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      cloud-gateway:
+        condition: service_started
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tienda
+      - SPRING_DATASOURCE_USERNAME=appuser
+      - SPRING_DATASOURCE_PASSWORD=apppass
+      - EUREKA_URI=http://eureka:8761/eureka
+    networks:
+      - elastic
+
+  # --- Buscador ---
+  buscador:
+    build: ../backend/buscador
+    container_name: buscador
+    ports:
+      - "8081:8081"
+    depends_on:
+      - elasticsearch
+      - eureka-server
+      - operador
+      - es-setup
+    environment:
+      - EUREKA_URI=http://eureka:8761/eureka
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    networks:
+      - elastic
+
+volumes:
+  mysql_data:
+  es_data:
+
+networks:
+  elastic:
+    driver: bridge

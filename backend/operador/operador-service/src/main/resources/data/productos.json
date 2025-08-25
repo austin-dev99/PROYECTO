@@ -1,0 +1,203 @@
+[
+  {
+    "id": 1,
+    "titulo": "Personalizado para Hombres PREMIUM",
+    "descripcion": "Obten un asesoramiento de un profesional exclusivamente para hombres",
+    "categoria": "hombres",
+    "subcategoria": "personalizados",
+    "imagen": "/productos/personalizado-hombre.webp",
+    "precio": 20000,
+    "stock": 10
+  },
+  {
+    "id": 2,
+    "titulo": "Playera semi olimpica hombre",
+    "descripcion": "Un atuendo para los hombres que quieren estar en forma",
+    "categoria": "hombres",
+    "subcategoria": "remeras",
+    "imagen": "/productos/remera-semiolimpica.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 3,
+    "titulo": "playera olimpica Hombre",
+    "descripcion": "Un atuendo para los hombres que quieren estar en forma",
+    "categoria": "hombres",
+    "subcategoria": "remeras",
+    "imagen": "/productos/remera-olimpica.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 4,
+    "titulo": "personalizado para Mujer PREMIUM",
+    "descripcion": "Obten un asesoramiento de un profesional exclusivamente para mujeres",
+    "categoria": "mujeres",
+    "subcategoria": "personalizados",
+    "imagen": "/productos/personalizado-mujer.webp",
+    "precio": 20000,
+    "stock": 10
+  },
+  {
+    "id": 5,
+    "titulo": "leggins mujer",
+    "descripcion": "Un atuendo para las mujeres que quieren estar en forma",
+    "categoria": "mujeres",
+    "subcategoria": "leggins",
+    "imagen": "/productos/leggdm.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 6,
+    "titulo": "conjunto Dama",
+    "descripcion": "Un outfit completo para las mujeres que quieren estar en forma",
+    "categoria": "mujeres",
+    "subcategoria": "conjuntos",
+    "imagen": "/productos/conjunto-dama.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 7,
+    "titulo": "conunto azul MUJER",
+    "descripcion": "Un outfit completo para las mujeres que quieren estar en forma",
+    "categoria": "mujeres",
+    "subcategoria": "conjuntos",
+    "imagen": "/productos/conjunto-dama-azul.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 8,
+    "titulo": "Pre Workout Venom",
+    "descripcion": "Potencia tu rendimiento con efectos de venom",
+    "categoria": "preentreno",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/preentreno-venom.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 9,
+    "titulo": "Pre Workout psychotic",
+    "descripcion": "Potencia tu rendimiento y fuerza con efectos del preentreno psychotic",
+    "categoria": "preentreno",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/preentreno-psychotic.webp",
+    "precio": 1450,
+    "stock": 10
+  },
+  {
+    "id": 10,
+    "titulo": "Pre Workout Bum",
+    "descripcion": "Potencia tu rendimiento y fuerza con un preentreno CON BUM",
+    "categoria": "preentreno",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/preworkout-bum.webp",
+    "precio": 1550,
+    "stock": 10
+  },
+  {
+    "id": 11,
+    "titulo": "Mesomorph Pre Workout",
+    "descripcion": "Un preentreno para profesionales",
+    "categoria": "preentreno",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/mesomorph-preworkout.webp",
+    "precio": 1650,
+    "stock": 10
+  },
+  {
+    "id": 12,
+    "titulo": "Proteina Whey gold",
+    "descripcion": "Un suplemento para los principiantes y avanzados",
+    "categoria": "proteinas",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/proteina-whey.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 13,
+    "titulo": "Proteina Whey EVOGEN",
+    "descripcion": "Un suplemento para los principiantes y avanzados",
+    "categoria": "proteinas",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/proteina-evogen.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 14,
+    "titulo": "Proteina Ganador de peso EVOGEN",
+    "descripcion": "Un suplemento para los que buscan ganar peso",
+    "categoria": "proteinas",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/proteina-ganador-evogen.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 15,
+    "titulo": "Proteina ISO 100% Whey",
+    "descripcion": "Un suplemento para todo tipo de personas",
+    "categoria": "proteinas",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/proteina-iso.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+  {
+    "id": 16,
+    "titulo": "Proteina Whey muscle mass",
+    "descripcion": "Un suplemento para los que buscan ganar masa muscular",
+    "categoria": "proteinas",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/proteina-muscle-infusion.webp",
+    "precio": 1500,
+    "stock": 10
+  },
+
+  {
+    "id": 17,
+    "titulo": "Set 3 de agarre para poleas",
+    "descripcion": "Un set de agarre para poleas que te ayudara a ejecutar tus ejercicios con una excelente tecnica",
+    "categoria": "agarre, poleas",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/agarrep.webp",
+    "precio": 1300,
+    "stock": 10
+  },
+  {
+    "id": 18,
+    "titulo": "Set 3 de agarre para Espalda",
+    "descripcion": "Un set de agarre para espalda que te ayudara a ejecutar tus ejercicios con una excelente tecnica",
+    "categoria": "agarre, espalda",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/agarreespalda.webp",
+    "precio": 1300,
+    "stock": 10
+  },
+  {
+    "id": 19,
+    "titulo": "Set 3 de agarre para Triceps",
+    "descripcion": "Un set de agarre para triceps que te ayudara a ejecutar tus ejercicios con una excelente tecnica",
+    "categoria": "agarre, triceps",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/tricepagarre.webp",
+    "precio": 1300,
+    "stock": 10
+  },
+  {
+    "id": 20,
+    "titulo": "Faja para Hombre o Mujer",
+    "descripcion": "Un set de agarre para pecho que te ayudara a ejecutar tus ejercicios con una excelente tecnica",
+    "categoria": "Hombre, Mujer, Faja",
+    "subcategoria": "Suplementos",
+    "imagen": "/productos/fajaHM.webp",
+    "precio": 1300,
+    "stock": 10
+  }
+]
