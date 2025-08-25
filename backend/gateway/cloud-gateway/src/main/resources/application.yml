@@ -1,5 +1,8 @@
 server:
   port: ${PORT:8080}
+eureka:
+  client:
+    enabled: false
 
 spring:
   application:
