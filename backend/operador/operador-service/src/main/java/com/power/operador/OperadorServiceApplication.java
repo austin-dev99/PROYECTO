@@ -6,8 +6,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.env.Environment;
 
 
 @SpringBootApplication
@@ -26,19 +24,6 @@ public class OperadorServiceApplication {
     }
 
 
-
-    Java
-    @Bean
-    CommandLineRunner checkEnv(org.springframework.core.env.Environment env) {
-        return args -> {
-            String url = env.getProperty("spring.datasource.url");
-            String user = env.getProperty("spring.datasource.username");
-            String pass = env.getProperty("spring.datasource.password");
-            System.out.println(">>> spring.datasource.url=" + url);
-            System.out.println(">>> spring.datasource.username=" + user);
-            System.out.println(">>> spring.datasource.password.length=" + (pass == null ? 0 : pass.length()));
-        };
-    }
 
 
 }
