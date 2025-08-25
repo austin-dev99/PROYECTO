@@ -6,8 +6,8 @@ spring:
     name: operador
   datasource:
     url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}
-    username: ${MYSQLUSER}
-    password: ${MYSQLPASSWORD}
+    username: ${MYSQLUSER:NOT_FOUND}
+    password: ${MYSQLPASSWORD:NOT_FOUND}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
