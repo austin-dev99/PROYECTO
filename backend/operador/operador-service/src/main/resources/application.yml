@@ -1,9 +1,4 @@
-server:
-  port: 8082
-
 spring:
-  application:
-    name: operador
   datasource:
     url: jdbc:mysql://mysql.railway.internal:3306/railway
     username: userop
@@ -13,8 +8,3 @@ spring:
     hibernate:
       ddl-auto: update
       dialect: org.hibernate.dialect.MySQL8Dialect
-    open-in-view: false
-
-app:
-  cors:
-    allowed-origins: "*"
