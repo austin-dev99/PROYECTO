@@ -5,13 +5,7 @@ spring:
   application:
     name: operador
 
-  cloud:
-    discovery:
-      enabled: false
 
-eureka:
-  client:
-    enabled: false
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -26,3 +20,8 @@ eureka:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+
+eureka:
+  client:
+    enabled: false
