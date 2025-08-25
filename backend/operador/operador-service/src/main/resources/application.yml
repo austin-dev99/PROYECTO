@@ -1,24 +1,20 @@
 server:
   port: 8082
+
 spring:
   application:
     name: operador
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/tienda}
+    url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
-eureka:
-  client:
-    enabled: false
+    show-sql: false
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health,info"
-
+# CORS simple (ajusta con tu dominio de Vercel luego)
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
