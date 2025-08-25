@@ -1,25 +1,13 @@
-server:
-  port: 8082
-
 spring:
-  application:
-    name: operador
-
   datasource:
-    # URL JDBC de MySQL (obligatorio el prefijo jdbc:mysql)
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:mysql://shinkansen.proxy.rlwy.net:23182/railway
+    username: userop
+    password: Operador
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
     properties:
-      # Forzar dialecto MySQL 8
-      hibernate.dialect: org.hibernate.dialect.MySQL8Dialect
-    open-in-view: false
-
-app:
-  cors:
-    allowed-origins: "*"
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
