@@ -9,14 +9,21 @@ eureka:
   client:
     enabled: false
 
-elasticsearch:
-  host: ${ELASTICSEARCH_HOST:http://localhost:9200}
-  user: ${ELASTICSEARCH_USER:}
-  password: ${ELASTICSEARCH_PASSWORD:}
+#elasticsearch:
+#  host: ${ELASTICSEARCH_HOST:http://localhost:9200}
+#  user: ${ELASTICSEARCH_USER:}
+#  password: ${ELASTICSEARCH_PASSWORD:}
 
-operador:
-  base-url: ${OPERADOR_BASE_URL:http://localhost:8082}
+  elasticsearch:
+    uris: ${ELASTICSEARCH_HOST}
+    username: elastic       # <- normalmente Elastic genera un usuario "elastic"
+    password: ${ELASTIC_API_KEY}   # o el apiKey si estás usando "ApiKey auth"
 
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+
+  services:
+    operador: ${APP_OPERADOR_URL}
+    gateway: ${GATEWAY_URL}
