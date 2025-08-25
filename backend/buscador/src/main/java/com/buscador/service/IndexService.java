@@ -1,12 +1,15 @@
 package com.buscador.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Map;
@@ -14,85 +17,83 @@ import java.util.Map;
 @Service
 public class IndexService {
 
-    private final RestTemplate rest;
-    private final ObjectMapper mapper;
+    private final RestTemplate operadorRest;
+    private final RestTemplate elasticRest;
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    // Variables configurables vía ENV
-    private final String operadorBaseUrl;
-    private final String elasticHost;
-    private final String elasticApiKey;
 
-    public IndexService(RestTemplate rest, ObjectMapper mapper,
-                        @Value("${OPERADOR_URL:http://localhost:8082}") String operadorBaseUrl,
-                        @Value("${ELASTICSEARCH_HOST:http://localhost:9200}") String elasticHost,
-                        @Value("${ELASTIC_API_KEY:}") String elasticApiKey) {
-        this.rest = rest;
-        this.mapper = mapper;
-        this.operadorBaseUrl = operadorBaseUrl;
-        this.elasticHost = elasticHost;
-        this.elasticApiKey = elasticApiKey;
+    // Valores leídos de variables de entorno (application.yml o Railway ENV)
+    @Value("${app.operador.url}")
+    private String operadorUrl;
+
+    @Value("${app.elasticsearch.url}")
+    private String elasticUrl;
+
+    public IndexService(
+            @Qualifier("eurekaRestTemplate") RestTemplate operadorRest,
+            @Qualifier("plainRestTemplate") RestTemplate elasticRest
+    ) {
+        this.operadorRest = operadorRest;
+        this.elasticRest = elasticRest;
     }
 
-    /**
-     * Indexa todos los productos obtenidos desde Operador usando la Bulk API de Elasticsearch.
-     * Devuelve la cantidad de documentos procesados (no necesariamente indexados con éxito).
-     */
-    public int indexAllFromOperador() {
+    @SuppressWarnings("unchecked")
+    public int reindexAll() {
+        List<Map<String, Object>> productos;
+
         try {
-            String url = operadorBaseUrl.endsWith("/") ? operadorBaseUrl + "productos" : operadorBaseUrl + "/productos";
-            ResponseEntity<String> resp = rest.getForEntity(url, String.class);
-
-            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
-                System.err.println("Operador no responde correctamente: " + resp.getStatusCode());
-                return 0;
-            }
-
-            List<Map<String, Object>> productos = mapper.readValue(resp.getBody(), new TypeReference<>() {});
-            if (productos.isEmpty()) {
-                System.out.println("No hay productos para indexar.");
-                return 0;
-            }
-
-            // Construir NDJSON para Bulk API
-            StringBuilder bulk = new StringBuilder();
-            for (Map<String, Object> p : productos) {
-                Object idObj = p.getOrDefault("id", p.get("ID"));
-                if (idObj != null) {
-                    bulk.append("{\"index\":{\"_id\":\"").append(idObj).append("\"}}\n");
-                } else {
-                    bulk.append("{\"index\":{}}\n");
-                }
-                bulk.append(mapper.writeValueAsString(p)).append("\n");
-            }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType("application/x-ndjson"));
-            if (elasticApiKey != null && !elasticApiKey.isBlank()) {
-                headers.set("Authorization", "ApiKey " + elasticApiKey);
-            }
-
-            HttpEntity<String> entity = new HttpEntity<>(bulk.toString(), headers);
-            String bulkUrl = elasticHost.endsWith("/") ? elasticHost + "_bulk" : elasticHost + "/_bulk";
-
-            ResponseEntity<String> esResp = rest.postForEntity(bulkUrl, entity, String.class);
-
-            // opcional: podríamos parsear esResp.getBody() para verificar errors:true
-            System.out.println("Bulk response status: " + esResp.getStatusCode());
-            return productos.size();
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            productos = operadorRest.getForObject(operadorUrl, List.class);
+        } catch (Exception e) {
+            System.err.println("❌ Error al obtener productos del Operador: " + e.getMessage());
             return 0;
         }
+
+        if (productos == null || productos.isEmpty()) {
+            System.out.println("ℹ️ Operador no devolvió productos.");
+            return 0;
+        }
+
+        StringBuilder bulkBody = new StringBuilder();
+        for (Map<String, Object> p : productos) {
+            Object rawId = p.get("id");
+            if (rawId == null) continue;
+            String id = String.valueOf(rawId);
+
+            bulkBody.append("{\"index\":{\"_id\":\"").append(id).append("\"}}\n");
+            try {
+                bulkBody.append(mapper.writeValueAsString(p)).append("\n");
+            } catch (JsonProcessingException e) {
+                System.err.println("⚠️ Error serializando producto id=" + id + ": " + e.getMessage());
+            }
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_NDJSON);
+
+        HttpEntity<String> entity = new HttpEntity<>(bulkBody.toString(), headers);
+
+        try {
+            String response = elasticRest.postForObject(elasticUrl, entity, String.class);
+            System.out.println("✅ Respuesta Elasticsearch: " + response);
+        } catch (Exception ex) {
+            System.err.println("❌ Error indexando en Elasticsearch: " + ex.getMessage());
+            return 0;
+        }
+
+        return productos.size();
     }
 
-    /**
-     * Reintenta indexar cada 30s (espera 30s antes del primer intento).
-     * Puedes ajustar initialDelay y fixedDelay mediante variables en application.yml o env vars.
-     */
-    @Scheduled(initialDelayString = "${index.initialDelay:30000}", fixedDelayString = "${index.fixedDelay:30000}")
-    public void scheduledIndex() {
-        int count = indexAllFromOperador();
-        System.out.println("Scheduled index: " + count + " documentos procesados.");
+    @Scheduled(fixedDelay = 30000)
+    public void autoReindex() {
+        try {
+            int total = reindexAll();
+            if (total > 0) {
+                System.out.println("✅ Reindexación periódica completada. Productos indexados: " + total);
+            } else {
+                System.out.println("⚠️ Reindexación periódica: sin productos disponibles.");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error en reindexación periódica: " + e.getMessage());
+        }
     }
 }

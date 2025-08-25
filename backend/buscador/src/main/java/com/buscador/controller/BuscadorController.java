@@ -1,102 +1,100 @@
 package com.buscador.controller;
-
+//
+//Controlador que expone
+//        /buscador/search,
+//        /buscador/suggest,
+//        /buscador/facets.
 import com.buscador.service.IndexService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 @RestController
-@RequestMapping("/buscador")
+@RequestMapping("/")
 public class BuscadorController {
 
-    private final RestTemplate rest;
+    private final RestTemplate elasticRest;
     private final ObjectMapper mapper;
     private final IndexService indexService;
-    private final String elasticHost;
-    private final String elasticApiKey;
 
-    public BuscadorController(RestTemplate rest, ObjectMapper mapper, IndexService indexService,
-                              @Value("${ELASTICSEARCH_HOST:http://localhost:9200}") String elasticHost,
-                              @Value("${ELASTIC_API_KEY:}") String elasticApiKey) {
-        this.rest = rest;
+    private String elasticUrl = "http://elasticsearch:9200";
+
+    @Autowired
+    public BuscadorController(
+            @Qualifier("plainRestTemplate") RestTemplate elasticRest,
+            ObjectMapper mapper,
+            IndexService indexService
+    ) {
+        this.elasticRest = elasticRest;
         this.mapper = mapper;
         this.indexService = indexService;
-        this.elasticHost = elasticHost;
-        this.elasticApiKey = elasticApiKey;
     }
 
-    /** Endpoint para indexar manualmente: POST /buscador/index-from-operador */
+    // 🔎 Buscar
+    @GetMapping("/search")
+    public String search(@RequestParam String q,
+                         @RequestParam(defaultValue = "20") int size) {
+        String esUrl = elasticUrl + "/productos/_search";
+        String body = """
+        {
+          "size": %d,
+          "query": {
+            "multi_match": {
+              "query": "%s",
+              "fields": ["nombre^3", "descripcion^2", "categoria", "subcategoria"]
+            }
+          }
+        }
+        """.formatted(size, q);
+
+        return elasticRest.postForObject(esUrl, entity(body), String.class);
+    }
+
+    // ✍ Autocompletar
+    @GetMapping("/suggest")
+    public String suggest(@RequestParam String q) {
+        String esUrl = elasticUrl + "/productos/_search";
+        String body = """
+        {
+          "size": 5,
+          "query": {
+            "multi_match": {
+              "query": "%s",
+              "type": "bool_prefix",
+              "fields": ["nombre.suggest", "nombre.suggest._2gram", "nombre.suggest._3gram"]
+            }
+          }
+        }
+        """.formatted(q);
+
+        return elasticRest.postForObject(esUrl, entity(body), String.class);
+    }
+
+    // 📊 Facetas
+    @GetMapping("/facets")
+    public String facets() {
+        String esUrl = elasticUrl + "/productos/_search";
+        String body = """
+        { "size": 0, "aggs": { "categorias": { "terms": { "field": "categoria.keyword" } } } }
+        """;
+        return elasticRest.postForObject(esUrl, entity(body), String.class);
+    }
+
+    // 📥 Indexación manual (si la quieres llamar con curl)
     @PostMapping("/index-from-operador")
     public ResponseEntity<String> indexFromOperador() {
-        int n = indexService.indexAllFromOperador();
-        return ResponseEntity.ok("{\"indexed\":" + n + "}");
+        int total = indexService.reindexAll();
+        if (total > 0) return ResponseEntity.ok("✅ Indexados " + total + " productos.");
+        return ResponseEntity.status(500).body("❌ No se indexaron productos.");
     }
 
-    /** Buscar full-text: GET /buscador/search?q=texto&size=20 */
-    @GetMapping("/search")
-    public ResponseEntity<String> search(@RequestParam String q, @RequestParam(defaultValue = "20") int size) {
-        String url = (elasticHost.endsWith("/") ? elasticHost + "productos/_search" : elasticHost + "/productos/_search");
-        String body = """
-                {
-                  "size": %d,
-                  "query": {
-                    "multi_match": {
-                      "query": "%s",
-                      "fields": ["nombre^3","descripcion^2","categoria","subcategoria"]
-                    }
-                  }
-                }
-                """.formatted(size, q);
-
+    // Utilidad
+    private HttpEntity<String> entity(String body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        if (elasticApiKey != null && !elasticApiKey.isBlank()) headers.set("Authorization", "ApiKey " + elasticApiKey);
-
-        HttpEntity<String> req = new HttpEntity<>(body, headers);
-        ResponseEntity<String> res = rest.postForEntity(url, req, String.class);
-        return ResponseEntity.status(res.getStatusCode()).body(res.getBody());
-    }
-
-    /** Suggest (autocomplete): GET /buscador/suggest?q=pre */
-    @GetMapping("/suggest")
-    public ResponseEntity<String> suggest(@RequestParam String q) {
-        String url = (elasticHost.endsWith("/") ? elasticHost + "productos/_search" : elasticHost + "/productos/_search");
-        String body = """
-                {
-                  "size": 5,
-                  "query": {
-                    "multi_match": {
-                      "query": "%s",
-                      "type": "bool_prefix",
-                      "fields": ["nombre.suggest","nombre.suggest._2gram","nombre.suggest._3gram"]
-                    }
-                  }
-                }
-                """.formatted(q);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        if (elasticApiKey != null && !elasticApiKey.isBlank()) headers.set("Authorization", "ApiKey " + elasticApiKey);
-
-        HttpEntity<String> req = new HttpEntity<>(body, headers);
-        ResponseEntity<String> res = rest.postForEntity(url, req, String.class);
-        return ResponseEntity.status(res.getStatusCode()).body(res.getBody());
-    }
-
-    /** Facets: GET /buscador/facets */
-    @GetMapping("/facets")
-    public ResponseEntity<String> facets() {
-        String url = (elasticHost.endsWith("/") ? elasticHost + "productos/_search" : elasticHost + "/productos/_search");
-        String body = "{ \"size\": 0, \"aggs\": { \"categorias\": { \"terms\": { \"field\": \"categoria.keyword\" } } } }";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        if (elasticApiKey != null && !elasticApiKey.isBlank()) headers.set("Authorization", "ApiKey " + elasticApiKey);
-
-        HttpEntity<String> req = new HttpEntity<>(body, headers);
-        ResponseEntity<String> res = rest.postForEntity(url, req, String.class);
-        return ResponseEntity.status(res.getStatusCode()).body(res.getBody());
+        return new HttpEntity<>(body, headers);
     }
 }
