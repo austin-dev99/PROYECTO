@@ -25,11 +25,8 @@ public class BuscadorController {
     @Value("${elasticsearch.url}")
     private String elasticUrl;
 
-    @Value("${elasticsearch.username}")
-    private String elasticUser;
-
-    @Value("${elasticsearch.password}")
-    private String elasticPass;
+    @Value("${elasticsearch.apiKey}")
+    private String elasticApiKey;
 
     @Autowired
     public BuscadorController(
@@ -104,7 +101,7 @@ public class BuscadorController {
     private HttpEntity<String> entity(String body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBasicAuth(elasticUser, elasticPass); // 👈 Agregamos auth
+        headers.set("Authorization", "ApiKey " + elasticApiKey);
         return new HttpEntity<>(body, headers);
     }
 }

@@ -27,11 +27,8 @@ public class IndexService {
     @Value("${elasticsearch.url}")
     private String elasticUrl;
 
-    @Value("${elasticsearch.username}")
-    private String elasticUser;
-
-    @Value("${elasticsearch.password}")
-    private String elasticPass;
+    @Value("${elasticsearch.apiKey}")
+    private String elasticApiKey;
 
     @Value("${operador.url}")
     private String operadorUrl;
@@ -76,7 +73,7 @@ public class IndexService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_NDJSON);
-        headers.setBasicAuth(elasticUser, elasticPass); // 👈 Auth básica
+        headers.set("Authorization", "ApiKey " + elasticApiKey);
 
 
 //        headers.set("Authorization", "ApiKey " + elasticApiKey);  // 👈 agrega esta línea
