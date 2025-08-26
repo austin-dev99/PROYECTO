@@ -15,7 +15,7 @@ app:
   elasticsearch:
     url: https://ff181e840976497cbdace600256e7012.us-east-2.aws.elastic-cloud.com:443
     username: elastic
-    password: ${ELASTIC_PASSWORD}
+    password: ${ELASTIC_API_KEY}
 
   operador:
     url: https://operador-production.up.railway.app/productos
