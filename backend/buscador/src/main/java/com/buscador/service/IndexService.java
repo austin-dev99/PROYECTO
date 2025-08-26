@@ -71,7 +71,10 @@ public class IndexService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_NDJSON);
-        headers.set("Authorization", "ApiKey " + elasticApiKey);  // 👈 agrega esta línea
+        headers.setBasicAuth(elasticUser, elasticPass); // 👈 Auth básica
+
+
+//        headers.set("Authorization", "ApiKey " + elasticApiKey);  // 👈 agrega esta línea
 //        Esto usará tu app.elasticsearch.apiKey
 //                (ya definido en application.yml y pasado como ENV en Railway).
 

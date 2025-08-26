@@ -20,7 +20,14 @@ public class BuscadorController {
     private final ObjectMapper mapper;
     private final IndexService indexService;
 
-    private String elasticUrl = "http://elasticsearch:9200";
+    @Value("${elasticsearch.url}")
+    private String elasticUrl;
+
+    @Value("${elasticsearch.username}")
+    private String elasticUser;
+
+    @Value("${elasticsearch.password}")
+    private String elasticPass;
 
     @Autowired
     public BuscadorController(
