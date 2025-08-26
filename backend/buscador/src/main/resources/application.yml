@@ -21,3 +21,11 @@ app:
     url: ${GATEWAY_URL}
 
 
+#  operador:
+#    url: ${OPERADOR_URL:https://operador-production.up.railway.app}
+#  elastic:
+#    host: ${ELASTICSEARCH_HOST:https://ff181e840976497cbdace600256e7012.us-east-2.aws.elastic-cloud.com:443}
+#    apiKey: ${ELASTIC_API_KEY:ZDlRYzRwZ0JKZkVESFg2NGVaSHI6NGVaSHI6OTZIN3o1WXlEQjhySG80R3FBTEM4dw==}
+
+
+
