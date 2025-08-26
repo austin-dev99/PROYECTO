@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8081}
+  port: ${PORT:8080}
 
 spring:
   application:
@@ -16,10 +16,10 @@ app:
     url: ${ELASTICSEARCH_HOST}
     apiKey: ${ELASTIC_API_KEY}
   operador:
-    url: https://operador-production.up.railway.app/operaciones
+    url:  ${OPERADOR_URL}
   gateway:
     url: ${GATEWAY_URL}
 
-#  ${OPERADOR_URL}
+#  https://operador-production.up.railway.app/operaciones
 
 
