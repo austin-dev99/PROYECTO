@@ -16,7 +16,7 @@ app:
     url: ${ELASTICSEARCH_HOST}
     apiKey: ${ELASTIC_API_KEY}
   operador:
-    url: https://operador-production.up.railway.app/operaciones
+    url: https://operador-production.up.railway.app/productos
   gateway:
     url: ${GATEWAY_URL}
 
