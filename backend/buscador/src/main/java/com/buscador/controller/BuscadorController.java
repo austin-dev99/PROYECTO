@@ -102,6 +102,7 @@ public class BuscadorController {
     private HttpEntity<String> entity(String body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBasicAuth(elasticUser, elasticPass); // 👈 Agregamos auth
         return new HttpEntity<>(body, headers);
     }
 }

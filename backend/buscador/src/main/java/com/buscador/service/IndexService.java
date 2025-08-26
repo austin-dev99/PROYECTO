@@ -24,12 +24,17 @@ public class IndexService {
 
     // Valores leídos de variables de entorno (application.yml o Railway ENV)
 
-    @Value("${app.elasticsearch.url}")
+    @Value("${elasticsearch.url}")
     private String elasticUrl;
-    @Value("${app.operador.url}")
+
+    @Value("${elasticsearch.username}")
+    private String elasticUser;
+
+    @Value("${elasticsearch.password}")
+    private String elasticPass;
+
+    @Value("${operador.url}")
     private String operadorUrl;
-    @Value("${app.elasticsearch.apiKey}")
-    private String elasticApiKey;
 
     public IndexService(
             @Qualifier("operadorRest") RestTemplate operadorRest,
@@ -81,7 +86,9 @@ public class IndexService {
         HttpEntity<String> entity = new HttpEntity<>(bulkBody.toString(), headers);
 
         try {
-            String response = elasticRest.postForObject(elasticUrl, entity, String.class);
+            String bulkUrl = elasticUrl + "/productos/_bulk";  // índice "productos"
+            String response = elasticRest.postForObject(bulkUrl, entity, String.class);
+
             System.out.println("✅ Respuesta Elasticsearch: " + response);
         } catch (Exception ex) {
             System.err.println("❌ Error indexando en Elasticsearch: " + ex.getMessage());
