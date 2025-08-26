@@ -15,10 +15,8 @@ app:
   elasticsearch:
     url: ${ELASTICSEARCH_HOST}
     apiKey: ${ELASTIC_API_KEY}
-
   operador:
     url: ${OPERADOR_URL}
-
   gateway:
     url: ${GATEWAY_URL}
 
