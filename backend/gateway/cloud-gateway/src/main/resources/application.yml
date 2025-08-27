@@ -12,13 +12,13 @@ spring:
     gateway:
       routes:
         - id: buscador
-          uri: ${BUSCADOR_URL:https://buscador-production-f636.up.railway.app/productos}
+          uri: ${BUSCADOR_URL:https://buscador-production-f636.up.railway.app}
           predicates:
             - Path=/buscador/**
           filters:
 #            - StripPrefix=1
         - id: operador
-          uri: ${OPERADOR_URL:https://operador-production.up.railway.app}
+          uri: ${OPERADOR_URL:https://operador-production.up.railway.app/productos}
           predicates:
             - Path=/operador/**
           filters:
