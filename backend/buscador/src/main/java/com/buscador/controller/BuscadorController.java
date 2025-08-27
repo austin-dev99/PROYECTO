@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 
 @RestController
-@RequestMapping("/")
 public class BuscadorController {
 
     private final RestTemplate elasticRest;
