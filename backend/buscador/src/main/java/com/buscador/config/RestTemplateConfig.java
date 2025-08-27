@@ -12,7 +12,7 @@ public class RestTemplateConfig {
         return new RestTemplate();
     }
 
-    @Bean(name = "elasticRest")
+    @Bean(name = "plainRestTemplate")
     public RestTemplate elasticRest() {
         return new RestTemplate();
     }
