@@ -17,7 +17,7 @@ elasticsearch:
   apiKey: ${ELASTIC_API_KEY}
 
   operador:
-    url: https://operador-production.up.railway.app/productos
+    url: ${OPERADOR_URL:https://operador-production.up.railway.app}
   gateway:
     url: ${GATEWAY_URL}
 
