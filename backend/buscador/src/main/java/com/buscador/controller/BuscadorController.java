@@ -28,10 +28,12 @@ public class BuscadorController {
     @Value("${elasticsearch.apiKey}")
     private String elasticApiKey;
 
-    // Caché en memoria para sugerencias
+    // Caché en memoria
+    private final Map<String, String> searchCache = new ConcurrentHashMap<>();
     private final Map<String, String> suggestCache = new ConcurrentHashMap<>();
+    private final Map<String, String> facetsCache = new ConcurrentHashMap<>();
+    private final Map<String, Long> cacheTime = new ConcurrentHashMap<>();
     private final long CACHE_EXPIRATION_MS = 30000; // 30s
-    private final Map<String, Long> suggestCacheTime = new ConcurrentHashMap<>();
 
     @Autowired
     public BuscadorController(
@@ -49,18 +51,47 @@ public class BuscadorController {
         this.indexService = indexService;
     }
 
+    // 🔎 Buscar con caché
+    @GetMapping("/search")
+    public ResponseEntity<String> search(@RequestParam String q,
+                                         @RequestParam(defaultValue = "20") int size) {
+        String key = q + "_" + size;
+        cleanCache();
+
+        if (searchCache.containsKey(key)) {
+            return ResponseEntity.ok(searchCache.get(key));
+        }
+
+        String esUrl = elasticUrl + "/productos/_search";
+        String body = """
+        {
+          "size": %d,
+          "_source": ["nombre","descripcion","categoria","subcategoria"],
+          "query": {
+            "multi_match": {
+              "query": "%s",
+              "fields": ["nombre^3", "descripcion^2", "categoria", "subcategoria"]
+            }
+          }
+        }
+        """.formatted(size, q);
+
+        try {
+            String result = elasticRest.postForObject(esUrl, entity(body), String.class);
+            searchCache.put(key, result);
+            cacheTime.put(key, System.currentTimeMillis());
+            return ResponseEntity.ok(result);
+        } catch (RestClientException e) {
+            System.err.println("❌ Error /search: " + e.getMessage());
+            return ResponseEntity.ok("{\"hits\":{\"hits\":[]}}");
+        }
+    }
+
     // ✍ Autocompletar con caché
     @GetMapping("/suggest")
     public ResponseEntity<String> suggest(@RequestParam String q) {
-        // Limpiar caché caducada
-        suggestCacheTime.forEach((key, time) -> {
-            if (System.currentTimeMillis() - time > CACHE_EXPIRATION_MS) {
-                suggestCache.remove(key);
-                suggestCacheTime.remove(key);
-            }
-        });
+        cleanCache();
 
-        // Verificar caché
         if (suggestCache.containsKey(q)) {
             return ResponseEntity.ok(suggestCache.get(q));
         }
@@ -81,28 +112,71 @@ public class BuscadorController {
         """.formatted(q);
 
         try {
-            long start = System.currentTimeMillis();
             String result = elasticRest.postForObject(esUrl, entity(body), String.class);
-            long duration = System.currentTimeMillis() - start;
-            System.out.println("🔹 /suggest query took " + duration + " ms");
-
-            // Guardar en caché
             suggestCache.put(q, result);
-            suggestCacheTime.put(q, System.currentTimeMillis());
-
+            cacheTime.put(q, System.currentTimeMillis());
             return ResponseEntity.ok(result);
         } catch (RestClientException e) {
             System.err.println("❌ Error /suggest: " + e.getMessage());
-            // Devolver respuesta vacía para no bloquear Railway
             return ResponseEntity.ok("{\"hits\":{\"hits\":[]}}");
         }
     }
 
-    // Utilidad
+    // 📊 Facetas con caché
+    @GetMapping("/facets")
+    public ResponseEntity<String> facets() {
+        String key = "facets";
+        cleanCache();
+
+        if (facetsCache.containsKey(key)) {
+            return ResponseEntity.ok(facetsCache.get(key));
+        }
+
+        String esUrl = elasticUrl + "/productos/_search";
+        String body = """
+        { 
+          "size": 0,
+          "aggs": { "categorias": { "terms": { "field": "categoria.keyword" } } }
+        }
+        """;
+
+        try {
+            String result = elasticRest.postForObject(esUrl, entity(body), String.class);
+            facetsCache.put(key, result);
+            cacheTime.put(key, System.currentTimeMillis());
+            return ResponseEntity.ok(result);
+        } catch (RestClientException e) {
+            System.err.println("❌ Error /facets: " + e.getMessage());
+            return ResponseEntity.ok("{\"aggregations\":{\"categorias\":{\"buckets\":[]}}}");
+        }
+    }
+
+    // 📥 Indexación manual
+    @PostMapping("/index-from-operador")
+    public ResponseEntity<String> indexFromOperador() {
+        int total = indexService.reindexAll();
+        if (total > 0) return ResponseEntity.ok("✅ Indexados " + total + " productos.");
+        return ResponseEntity.status(500).body("❌ No se indexaron productos.");
+    }
+
+    // ✨ Utilidad: HttpEntity con headers
     private HttpEntity<String> entity(String body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "ApiKey " + elasticApiKey);
         return new HttpEntity<>(body, headers);
+    }
+
+    // ✨ Limpiar caché caducada
+    private void cleanCache() {
+        long now = System.currentTimeMillis();
+        cacheTime.forEach((key, time) -> {
+            if (now - time > CACHE_EXPIRATION_MS) {
+                searchCache.remove(key);
+                suggestCache.remove(key);
+                facetsCache.remove(key);
+                cacheTime.remove(key);
+            }
+        });
     }
 }
