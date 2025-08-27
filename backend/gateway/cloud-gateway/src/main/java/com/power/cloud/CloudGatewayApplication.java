@@ -29,7 +29,7 @@ public class CloudGatewayApplication {
      */
     @Bean
     public CorsWebFilter corsWebFilter(
-            @Value("${CORS_ALLOWED_ORIGINS:http://localhost:3000}") String originsProp
+            @Value("${CORS_ALLOWED_ORIGINS:https://power-fit-react.vercel.app") String originsProp
     ) {
         // Normaliza: separa por coma, quita espacios y slashes finales
         List<String> origins = Arrays.stream(originsProp.split(","))
