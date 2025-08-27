@@ -12,7 +12,7 @@ spring:
     gateway:
       routes:
         - id: buscador
-          uri: ${BUSCADOR_URL:https://buscador-production-f636.up.railway.app}
+          uri: ${BUSCADOR_URL:https://buscador-production-f636.up.railway.app/productos}
           predicates:
             - Path=/buscador/**
           filters:
