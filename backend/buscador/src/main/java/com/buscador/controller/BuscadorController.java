@@ -4,15 +4,16 @@ package com.buscador.controller;
 //        /buscador/search,
 //        /buscador/suggest,
 //        /buscador/facets.
+
 import com.buscador.service.IndexService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
-
 
 @RestController
 @RequestMapping("/buscador")
@@ -41,12 +42,13 @@ public class BuscadorController {
 
     // 🔎 Buscar
     @GetMapping("/search")
-    public String search(@RequestParam String q,
-                         @RequestParam(defaultValue = "20") int size) {
+    public ResponseEntity<String> search(@RequestParam String q,
+                                         @RequestParam(defaultValue = "20") int size) {
         String esUrl = elasticUrl + "/productos/_search";
         String body = """
         {
           "size": %d,
+          "_source": ["id","nombre","descripcion","categoria","subcategoria"],
           "query": {
             "multi_match": {
               "query": "%s",
@@ -56,16 +58,26 @@ public class BuscadorController {
         }
         """.formatted(size, q);
 
-        return elasticRest.postForObject(esUrl, entity(body), String.class);
+        try {
+            long start = System.currentTimeMillis();
+            String result = elasticRest.postForObject(esUrl, entity(body), String.class);
+            long duration = System.currentTimeMillis() - start;
+            System.out.println("🔹 /search query took " + duration + " ms");
+            return ResponseEntity.ok(result);
+        } catch (RestClientException e) {
+            System.err.println("❌ Error /search: " + e.getMessage());
+            return ResponseEntity.status(502).body("{\"error\":\"Elasticsearch no responde\"}");
+        }
     }
 
     // ✍ Autocompletar
     @GetMapping("/suggest")
-    public String suggest(@RequestParam String q) {
+    public ResponseEntity<String> suggest(@RequestParam String q) {
         String esUrl = elasticUrl + "/productos/_search";
         String body = """
         {
           "size": 5,
+          "_source": ["nombre"],
           "query": {
             "multi_match": {
               "query": "%s",
@@ -76,20 +88,42 @@ public class BuscadorController {
         }
         """.formatted(q);
 
-        return elasticRest.postForObject(esUrl, entity(body), String.class);
+        try {
+            long start = System.currentTimeMillis();
+            String result = elasticRest.postForObject(esUrl, entity(body), String.class);
+            long duration = System.currentTimeMillis() - start;
+            System.out.println("🔹 /suggest query took " + duration + " ms");
+            return ResponseEntity.ok(result);
+        } catch (RestClientException e) {
+            System.err.println("❌ Error /suggest: " + e.getMessage());
+            return ResponseEntity.status(502).body("{\"error\":\"Elasticsearch no responde\"}");
+        }
     }
 
     // 📊 Facetas
     @GetMapping("/facets")
-    public String facets() {
+    public ResponseEntity<String> facets() {
         String esUrl = elasticUrl + "/productos/_search";
         String body = """
-        { "size": 0, "aggs": { "categorias": { "terms": { "field": "categoria.keyword" } } } }
+        {
+          "size": 0,
+          "aggs": { "categorias": { "terms": { "field": "categoria.keyword" } } }
+        }
         """;
-        return elasticRest.postForObject(esUrl, entity(body), String.class);
+
+        try {
+            long start = System.currentTimeMillis();
+            String result = elasticRest.postForObject(esUrl, entity(body), String.class);
+            long duration = System.currentTimeMillis() - start;
+            System.out.println("🔹 /facets query took " + duration + " ms");
+            return ResponseEntity.ok(result);
+        } catch (RestClientException e) {
+            System.err.println("❌ Error /facets: " + e.getMessage());
+            return ResponseEntity.status(502).body("{\"error\":\"Elasticsearch no responde\"}");
+        }
     }
 
-    // 📥 Indexación manual (si la quieres llamar con curl)
+    // 📥 Indexación manual
     @PostMapping("/index-from-operador")
     public ResponseEntity<String> indexFromOperador() {
         int total = indexService.reindexAll();
