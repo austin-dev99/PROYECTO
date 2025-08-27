@@ -23,6 +23,10 @@ spring:
             - Path=/operador/**
           filters:
             - StripPrefix=1
+      httpclient:
+        connect-timeout: 10000  # 10 segundos
+        response-timeout: 30000ms  # 30 segundos
+        wiretap: true
 
 # (Opcional) Exponer endpoints para debug de rutas
 management:
