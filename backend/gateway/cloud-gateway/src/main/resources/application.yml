@@ -25,4 +25,4 @@ spring:
               - StripPrefix=1
 app:
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://power-fit-react.vercel.app}}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://power-fit-react.vercel.app}
