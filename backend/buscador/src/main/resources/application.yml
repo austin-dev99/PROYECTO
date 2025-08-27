@@ -12,7 +12,7 @@ eureka:
 app.cors.allowed-origins: ${CORS_ALLOWED_ORIGINS:https://power-fit-react-alexis-reyes.vercel.app}
 
 elasticsearch:
-  url: ${ELASTICSEARCH_URL}
+  url: ${ELASTICSEARCH_URL:https://ff181e840976497cbdace600256e7012.us-east-2.aws.elastic-cloud.com:443}
   apiKey: ${ELASTIC_API_KEY}
 
 operador.url: ${OPERADOR_URL:https://operador-production.up.railway.app/productos}
