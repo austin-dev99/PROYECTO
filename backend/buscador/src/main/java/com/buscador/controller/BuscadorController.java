@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 
 @RestController
-@RequestMapping("/buscador")  // 👈 aplica a todo
+@RequestMapping("/buscador")
 public class BuscadorController {
 
     private final RestTemplate elasticRest;
@@ -30,7 +30,7 @@ public class BuscadorController {
 
     @Autowired
     public BuscadorController(
-            @Qualifier("plainRestTemplate") RestTemplate elasticRest,
+            @Qualifier("elasticRest") RestTemplate elasticRest,
             ObjectMapper mapper,
             IndexService indexService
     ) {
