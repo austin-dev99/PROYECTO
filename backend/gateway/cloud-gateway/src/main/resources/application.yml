@@ -15,8 +15,7 @@ spring:
           uri: ${BUSCADOR_URL:https://buscador-production-f636.up.railway.app}
           predicates:
             - Path=/buscador/**
-          filters:
-            - StripPrefix=1   # /buscador/search -> /search en el servicio buscador
+          # No StripPrefix porque el servicio buscador expone rutas bajo context-path /buscador
         - id: operador
           uri: ${OPERADOR_URL:https://operador-production.up.railway.app}
           predicates:
