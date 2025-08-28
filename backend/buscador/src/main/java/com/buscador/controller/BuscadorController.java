@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 
 @RestController
-@RequestMapping("/buscador")
+@RequestMapping("/")
 public class BuscadorController {
 
     private final RestTemplate elasticRest;
