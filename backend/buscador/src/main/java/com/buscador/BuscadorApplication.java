@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 
+
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableScheduling  // ✅ importante hacer que spring boot reconozca las tareas programadas
@@ -31,8 +32,8 @@ public class BuscadorApplication {
     @Qualifier("plainRestTemplate")
     RestTemplate plainRestTemplate(
             RestTemplateBuilder builder,
-            @Value("${ELASTICSEARCH_USERNAME:}") String user,
-            @Value("${ELASTICSEARCH_PASSWORD:}") String pass
+            @Value("${elasticsearch.url}") String user,
+            @Value("${elasticsearch.apiKey}}") String pass
     ) {
         if (user != null && !user.isBlank()) {
             return builder.basicAuthentication(user, pass).build();
