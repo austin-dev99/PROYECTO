@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/buscador")
+@RequestMapping("/")
 public class BuscadorController {
 
     private final RestTemplate elasticRest;
