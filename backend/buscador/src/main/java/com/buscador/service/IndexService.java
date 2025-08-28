@@ -2,7 +2,9 @@ package com.buscador.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -28,8 +30,6 @@ public class IndexService {
     @Value("${operador.url}")
     private String operadorUrl;
 
-    private static final String INDEX = "productos";
-
     public IndexService(
             @Qualifier("operadorRest") RestTemplate operadorRest,
             @Qualifier("elasticRest") RestTemplate elasticRest
@@ -39,7 +39,7 @@ public class IndexService {
     }
 
     /**
-     * Reindexa todos los productos desde Operador → Elasticsearch (bulk).
+     * 🔄 Reindexa todos los productos desde el Operador → Elasticsearch
      */
     @SuppressWarnings("unchecked")
     public int reindexAll() {
@@ -48,12 +48,12 @@ public class IndexService {
         try {
             productos = operadorRest.getForObject(operadorUrl, List.class);
         } catch (Exception e) {
-            System.err.println("❌ Error obteniendo productos del Operador: " + e.getMessage());
+            System.err.println("❌ Error al obtener productos del Operador: " + e.getMessage());
             return 0;
         }
 
         if (productos == null || productos.isEmpty()) {
-            System.out.println("ℹ️ Operador retornó 0 productos.");
+            System.out.println("ℹ️ Operador no devolvió productos.");
             return 0;
         }
 
@@ -63,10 +63,7 @@ public class IndexService {
             if (rawId == null) continue;
             String id = String.valueOf(rawId);
 
-            // Línea de acción
-            bulkBody.append("{\"index\":{\"_index\":\"").append(INDEX).append("\",\"_id\":\"")
-                    .append(id).append("\"}}\n");
-
+            bulkBody.append("{\"index\":{\"_id\":\"").append(id).append("\"}}\n");
             try {
                 bulkBody.append(mapper.writeValueAsString(p)).append("\n");
             } catch (JsonProcessingException e) {
@@ -79,16 +76,11 @@ public class IndexService {
         headers.set("Authorization", "ApiKey " + elasticApiKey);
 
         HttpEntity<String> entity = new HttpEntity<>(bulkBody.toString(), headers);
-        String bulkUrl = elasticUrl + "/_bulk";
 
         try {
+            String bulkUrl = elasticUrl + "/productos/_bulk";
             String response = elasticRest.postForObject(bulkUrl, entity, String.class);
-            System.out.println("✅ Respuesta bulk: " + response);
-
-            // Validar si hubo errores parciales
-            if (response != null && response.contains("\"errors\":true")) {
-                System.err.println("⚠️ El bulk reporta errores parciales. Revisa los items.");
-            }
+            System.out.println("✅ Respuesta Elasticsearch: " + response);
         } catch (Exception ex) {
             System.err.println("❌ Error indexando en Elasticsearch: " + ex.getMessage());
             return 0;
@@ -98,80 +90,70 @@ public class IndexService {
     }
 
     /**
-     * Búsqueda general multi_match.
+     * 🔎 Búsqueda general (multi_match en nombre, descripción, categoría y subcategoría)
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Object> search(String query, int size) {
-        String url = elasticUrl + "/" + INDEX + "/_search";
+    public Map<String, Object> search(String query) {
+        String url = elasticUrl + "/productos/_search";
 
         String body = """
             {
-              "size": %d,
               "query": {
                 "multi_match": {
                   "query": "%s",
-                  "fields": ["nombre^3", "descripcion^2", "categoria", "subcategoria"]
+                  "fields": ["nombre", "descripcion", "categoria", "subcategoria"]
                 }
               }
             }
-            """.formatted(size, query.replace("\"", "\\\""));
+            """.formatted(query);
 
-        HttpHeaders headers = jsonHeaders();
-        HttpEntity<String> entity = new HttpEntity<>(body, headers);
-
-        return elasticRest.postForObject(url, entity, Map.class);
-    }
-
-    /**
-     * Sugerencias (autocomplete) usando search_as_you_type.
-     */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> suggest(String query) {
-        String url = elasticUrl + "/" + INDEX + "/_search";
-
-        String body = """
-            {
-              "size": 5,
-              "query": {
-                "multi_match": {
-                  "query": "%s",
-                  "type": "bool_prefix",
-                  "fields": [
-                    "nombre.suggest",
-                    "nombre.suggest._2gram",
-                    "nombre.suggest._3gram",
-                    "nombre"        // fallback para coincidencias directas
-                  ]
-                }
-              },
-              "_source": ["id","nombre","imagen"]
-            }
-            """.formatted(query.replace("\"", "\\\""));
-
-        HttpHeaders headers = jsonHeaders();
-        HttpEntity<String> entity = new HttpEntity<>(body, headers);
-
-        return elasticRest.postForObject(url, entity, Map.class);
-    }
-
-    private HttpHeaders jsonHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "ApiKey " + elasticApiKey);
-        return headers;
+
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
+        return elasticRest.postForObject(url, entity, Map.class);
     }
 
     /**
-     * Reindexación periódica cada 5 minutos (ajusta si quieres).
+     * 💡 Sugerencias tipo autocompletado (match_phrase_prefix en nombre)
      */
-    @Scheduled(fixedDelay = 300000)
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> suggest(String query) {
+        String url = elasticUrl + "/productos/_search";
+
+        String body = """
+            {
+              "query": {
+                "match_phrase_prefix": {
+                  "nombre": "%s"
+                }
+              },
+              "_source": ["id", "nombre", "imagen"] 
+            }
+            """.formatted(query);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "ApiKey " + elasticApiKey);
+
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
+        return elasticRest.postForObject(url, entity, Map.class);
+    }
+
+    /**
+     * ⏰ Reindexación automática cada 30 segundos
+     */
+    @Scheduled(fixedDelay = 30000)
     public void autoReindex() {
         try {
             int total = reindexAll();
             if (total > 0) {
-                System.out.println("✅ Reindexación periódica. Productos indexados: " + total);
+                System.out.println("✅ Reindexación periódica completada. Productos indexados: " + total);
             } else {
-                System.out.println("⚠️ Reindexación periódica sin productos.");
+                System.out.println("⚠️ Reindexación periódica: sin productos disponibles.");
             }
         } catch (Exception e) {
             System.err.println("❌ Error en reindexación periódica: " + e.getMessage());

@@ -16,13 +16,13 @@ spring:
           predicates:
             - Path=/buscador/**
           filters:
-#            - StripPrefix=1
+            - StripPrefix=1   # /buscador/search -> /search en el servicio buscador
         - id: operador
-          uri: ${OPERADOR_URL:https://operador-production.up.railway.app/productos}
+          uri: ${OPERADOR_URL:https://operador-production.up.railway.app}
           predicates:
             - Path=/operador/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=1   # /operador/productos -> /productos en el servicio operador
       httpclient:
         connect-timeout: 10000  # 10 segundos
         response-timeout: 30000ms  # 30 segundos
