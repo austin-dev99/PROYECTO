@@ -11,7 +11,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/buscador")
@@ -38,22 +39,19 @@ public class BuscadorController {
         this.indexService = indexService;
     }
 
-    // Health simple
+    // Health
     @GetMapping("/health")
     public String health() {
         return "OK";
     }
 
-    // Buscar productos
+    // ================== ENDPOINTS CRUDOS (se mantienen) ==================
     @GetMapping("/search")
-    public ResponseEntity<?> search(
-            @RequestParam String q,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        System.out.println(">>> /search q=" + q + " size=" + size);
+    public ResponseEntity<?> search(@RequestParam String q,
+                                    @RequestParam(defaultValue = "20") int size) {
+        System.out.println(">>> /buscador/search q=" + q + " size=" + size);
         try {
-            Map<String, Object> resp = indexService.search(q, size);
-            return ResponseEntity.ok(resp);
+            return ResponseEntity.ok(indexService.search(q, size));
         } catch (HttpClientErrorException e) {
             return handleEsClientError(e, "search");
         } catch (RestClientException e) {
@@ -62,16 +60,14 @@ public class BuscadorController {
         }
     }
 
-    // Autocomplete
     @GetMapping("/suggest")
     public ResponseEntity<?> suggest(@RequestParam String q) {
         if (q == null || q.trim().length() < 2) {
-            return ResponseEntity.ok(Map.of("hits", Map.of("hits", java.util.List.of())));
+            return ResponseEntity.ok(Map.of("hits", Map.of("hits", List.of())));
         }
-        System.out.println(">>> /suggest q=" + q);
+        System.out.println(">>> /buscador/suggest q=" + q);
         try {
-            Map<String, Object> resp = indexService.suggest(q);
-            return ResponseEntity.ok(resp);
+            return ResponseEntity.ok(indexService.suggest(q));
         } catch (HttpClientErrorException e) {
             return handleEsClientError(e, "suggest");
         } catch (RestClientException e) {
@@ -80,7 +76,47 @@ public class BuscadorController {
         }
     }
 
-    // Facetas
+    // ================== NUEVOS ENDPOINTS SIMPLES ==================
+
+    @GetMapping("/search-simple")
+    public ResponseEntity<?> searchSimple(@RequestParam String q,
+                                          @RequestParam(defaultValue = "20") int size) {
+        try {
+            Map<String,Object> raw = indexService.search(q, size);
+            List<Map<String,Object>> items = mapHits(raw);
+            long total = extractTotal(raw);
+            long took = ((Number) raw.getOrDefault("took", 0)).longValue();
+            return ResponseEntity.ok(Map.of(
+                    "items", items,
+                    "total", total,
+                    "took", took
+            ));
+        } catch (HttpClientErrorException e) {
+            return handleEsClientError(e, "search-simple");
+        } catch (RestClientException e) {
+            return ResponseEntity.status(502)
+                    .body(Map.of("status","error","message","Falló petición a ES"));
+        }
+    }
+
+    @GetMapping("/suggest-simple")
+    public ResponseEntity<?> suggestSimple(@RequestParam String q) {
+        if (q == null || q.trim().length() < 2) {
+            return ResponseEntity.ok(Map.of("items", List.of()));
+        }
+        try {
+            Map<String,Object> raw = indexService.suggest(q);
+            List<Map<String,Object>> items = mapHits(raw);
+            return ResponseEntity.ok(Map.of("items", items));
+        } catch (HttpClientErrorException e) {
+            return handleEsClientError(e, "suggest-simple");
+        } catch (RestClientException e) {
+            return ResponseEntity.status(502)
+                    .body(Map.of("status","error","message","Falló petición a ES"));
+        }
+    }
+
+    // ================== FACETS / REINDEX ==================
     @GetMapping("/facets")
     public ResponseEntity<?> facets() {
         String esUrl = elasticUrl + "/productos/_search";
@@ -100,19 +136,56 @@ public class BuscadorController {
             return handleEsClientError(e, "facets");
         } catch (Exception e) {
             return ResponseEntity.status(502)
-                    .body(Map.of("status", "error", "message", "Falló petición a ES"));
+                    .body(Map.of("status","error","message","Falló petición a ES"));
         }
     }
 
-    // Reindex manual
     @PostMapping("/index-from-operador")
     public ResponseEntity<?> indexFromOperador() {
         int total = indexService.reindexAll();
         if (total > 0) {
-            return ResponseEntity.ok(Map.of("status", "ok", "message", "Indexados " + total + " productos"));
+            return ResponseEntity.ok(Map.of("status","ok","message","Indexados "+ total +" productos"));
         }
         return ResponseEntity.status(500)
-                .body(Map.of("status", "error", "message", "No se indexaron productos"));
+                .body(Map.of("status","error","message","No se indexaron productos"));
+    }
+
+    // ================== HELPERS ==================
+    private List<Map<String,Object>> mapHits(Map<String,Object> raw) {
+        if (raw == null) return List.of();
+        Object hitsObj = raw.get("hits");
+        if (!(hitsObj instanceof Map<?,?> hitsMap)) return List.of();
+        Object innerHits = hitsMap.get("hits");
+        if (!(innerHits instanceof List<?> list)) return List.of();
+
+        return list.stream().map(h -> {
+            if (!(h instanceof Map<?,?> hit)) return Map.<String,Object>of();
+            Object sourceObj = hit.get("_source");
+            Map<String,Object> src = sourceObj instanceof Map<?,?> m
+                    ? new LinkedHashMap<>((Map<String,Object>) m)
+                    : new LinkedHashMap<>();
+            String id = String.valueOf(src.getOrDefault("id", hit.get("_id")));
+            src.put("id", id);
+            Object score = hit.get("_score");
+            if (score instanceof Number n) src.put("_score", n);
+            return src;
+        }).collect(Collectors.toList());
+    }
+
+    private long extractTotal(Map<String,Object> raw) {
+        try {
+            Object hitsObj = raw.get("hits");
+            if (hitsObj instanceof Map<?,?> hm) {
+                Object totalObj = hm.get("total");
+                if (totalObj instanceof Map<?,?> tm) {
+                    Object v = tm.get("value");
+                    if (v instanceof Number n) return n.longValue();
+                } else if (totalObj instanceof Number n) {
+                    return n.longValue();
+                }
+            }
+        } catch (Exception ignored) {}
+        return 0;
     }
 
     private ResponseEntity<?> handleEsClientError(HttpClientErrorException e, String tag) {
@@ -123,7 +196,6 @@ public class BuscadorController {
                 .body(body);
     }
 
-    // Headers util
     private HttpEntity<String> entity(String body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
