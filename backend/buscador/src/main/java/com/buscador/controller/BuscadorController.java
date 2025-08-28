@@ -2,14 +2,16 @@ package com.buscador.controller;
 
 import com.buscador.service.IndexService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/")
@@ -36,78 +38,51 @@ public class BuscadorController {
         this.indexService = indexService;
     }
 
-    // 🔎 Buscar productos
+    // Health simple
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
+
+    // Buscar productos
     @GetMapping("/search")
-    public ResponseEntity<String> search(@RequestParam String q,
-                                         @RequestParam(defaultValue = "20") int size) {
-        String esUrl = elasticUrl + "/productos/_search";
-        String body = """
-                {
-                  "size": %d,
-                  "query": {
-                    "multi_match": {
-                      "query": "%s",
-                      "fields": ["nombre^3", "descripcion^2", "categoria", "subcategoria"]
-                    }
-                  }
-                }
-                """.formatted(size, q);
-
+    public ResponseEntity<?> search(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        System.out.println(">>> /search q=" + q + " size=" + size);
         try {
-            System.out.println("🔹 Search query: " + q);
-            String response = elasticRest.postForObject(esUrl, entity(body), String.class);
-            return ResponseEntity.ok(response);
+            Map<String, Object> resp = indexService.search(q, size);
+            return ResponseEntity.ok(resp);
         } catch (HttpClientErrorException e) {
-            System.err.println("❌ Elasticsearch error: " + e.getStatusCode());
-            return ResponseEntity.status(e.getStatusCode())
-                    .body("{\"status\":\"error\",\"message\":\"Elasticsearch error\"}");
+            return handleEsClientError(e, "search");
         } catch (RestClientException e) {
-            System.err.println("❌ Elasticsearch request failed: " + e.getMessage());
             return ResponseEntity.status(502)
-                    .body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
+                    .body(Map.of("status", "error", "message", "Falló petición a Elasticsearch"));
         }
     }
 
-    // ✍ Autocompletar productos
+    // Autocomplete
     @GetMapping("/suggest")
-    public ResponseEntity<String> suggest(@RequestParam String q) {
-        String esUrl = elasticUrl + "/productos/_search";
-        String body = """
-                {
-                  "size": 5,
-                  "query": {
-                    "multi_match": {
-                      "query": "%s",
-                      "type": "bool_prefix",
-                      "fields": [
-                        "nombre.suggest",
-                        "nombre.suggest._2gram",
-                        "nombre.suggest._3gram"
-                      ]
-                    }
-                  },
-                  "_source": ["id","nombre","imagen"]
-                }
-                """.formatted(q);
-
+    public ResponseEntity<?> suggest(@RequestParam String q) {
+        if (q == null || q.trim().length() < 2) {
+            return ResponseEntity.ok(Map.of("hits", Map.of("hits", java.util.List.of())));
+        }
+        System.out.println(">>> /suggest q=" + q);
         try {
-            System.out.println("🔹 Suggest query: " + q);
-            String response = elasticRest.postForObject(esUrl, entity(body), String.class);
-            return ResponseEntity.ok(response);
+            Map<String, Object> resp = indexService.suggest(q);
+            return ResponseEntity.ok(resp);
         } catch (HttpClientErrorException e) {
-            System.err.println("❌ Elasticsearch error: " + e.getStatusCode());
-            return ResponseEntity.status(e.getStatusCode())
-                    .body("{\"status\":\"error\",\"message\":\"Elasticsearch error\"}");
+            return handleEsClientError(e, "suggest");
         } catch (RestClientException e) {
-            System.err.println("❌ Elasticsearch request failed: " + e.getMessage());
             return ResponseEntity.status(502)
-                    .body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
+                    .body(Map.of("status", "error", "message", "Falló petición a Elasticsearch"));
         }
     }
 
-    // 📊 Facetas por categoría
+    // Facetas
     @GetMapping("/facets")
-    public ResponseEntity<String> facets() {
+    public ResponseEntity<?> facets() {
         String esUrl = elasticUrl + "/productos/_search";
         String body = """
                 {
@@ -120,26 +95,35 @@ public class BuscadorController {
                 """;
         try {
             String response = elasticRest.postForObject(esUrl, entity(body), String.class);
-            return ResponseEntity.ok(response);
-        } catch (RestClientException e) {
-            System.err.println("❌ Elasticsearch facets request failed: " + e.getMessage());
+            return ResponseEntity.ok(mapper.readValue(response, Map.class));
+        } catch (HttpClientErrorException e) {
+            return handleEsClientError(e, "facets");
+        } catch (Exception e) {
             return ResponseEntity.status(502)
-                    .body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
+                    .body(Map.of("status", "error", "message", "Falló petición a ES"));
         }
     }
 
-    // 📥 Indexación manual desde Operador
+    // Reindex manual
     @PostMapping("/index-from-operador")
-    public ResponseEntity<String> indexFromOperador() {
+    public ResponseEntity<?> indexFromOperador() {
         int total = indexService.reindexAll();
         if (total > 0) {
-            return ResponseEntity.ok("{\"status\":\"ok\",\"message\":\"Indexados " + total + " productos.\"}");
+            return ResponseEntity.ok(Map.of("status", "ok", "message", "Indexados " + total + " productos"));
         }
         return ResponseEntity.status(500)
-                .body("{\"status\":\"error\",\"message\":\"No se indexaron productos.\"}");
+                .body(Map.of("status", "error", "message", "No se indexaron productos"));
     }
 
-    // Utilidad para headers
+    private ResponseEntity<?> handleEsClientError(HttpClientErrorException e, String tag) {
+        String body = e.getResponseBodyAsString();
+        System.err.println("❌ ES error " + tag + ": " + e.getStatusCode() + " body=" + body);
+        return ResponseEntity.status(e.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
+    }
+
+    // Headers util
     private HttpEntity<String> entity(String body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
