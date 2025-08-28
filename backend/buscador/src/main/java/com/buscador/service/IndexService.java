@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 
-
 import java.util.List;
 import java.util.Map;
 
@@ -21,9 +20,6 @@ public class IndexService {
     private final RestTemplate operadorRest;
     private final RestTemplate elasticRest;
     private final ObjectMapper mapper = new ObjectMapper();
-
-
-    // Valores leídos de variables de entorno (application.yml o Railway ENV)
 
     @Value("${elasticsearch.url}")
     private String elasticUrl;
@@ -42,6 +38,9 @@ public class IndexService {
         this.elasticRest = elasticRest;
     }
 
+    /**
+     * 🔄 Reindexa todos los productos desde el Operador → Elasticsearch
+     */
     @SuppressWarnings("unchecked")
     public int reindexAll() {
         List<Map<String, Object>> productos;
@@ -76,17 +75,11 @@ public class IndexService {
         headers.setContentType(MediaType.APPLICATION_NDJSON);
         headers.set("Authorization", "ApiKey " + elasticApiKey);
 
-
-//        headers.set("Authorization", "ApiKey " + elasticApiKey);  // 👈 agrega esta línea
-//        Esto usará tu app.elasticsearch.apiKey
-//                (ya definido en application.yml y pasado como ENV en Railway).
-
         HttpEntity<String> entity = new HttpEntity<>(bulkBody.toString(), headers);
 
         try {
-            String bulkUrl = elasticUrl + "/productos/_bulk";  // índice "productos"
+            String bulkUrl = elasticUrl + "/productos/_bulk";
             String response = elasticRest.postForObject(bulkUrl, entity, String.class);
-
             System.out.println("✅ Respuesta Elasticsearch: " + response);
         } catch (Exception ex) {
             System.err.println("❌ Error indexando en Elasticsearch: " + ex.getMessage());
@@ -96,6 +89,63 @@ public class IndexService {
         return productos.size();
     }
 
+    /**
+     * 🔎 Búsqueda general (multi_match en nombre, descripción, categoría y subcategoría)
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> search(String query) {
+        String url = elasticUrl + "/productos/_search";
+
+        String body = """
+            {
+              "query": {
+                "multi_match": {
+                  "query": "%s",
+                  "fields": ["nombre", "descripcion", "categoria", "subcategoria"]
+                }
+              }
+            }
+            """.formatted(query);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "ApiKey " + elasticApiKey);
+
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
+        return elasticRest.postForObject(url, entity, Map.class);
+    }
+
+    /**
+     * 💡 Sugerencias tipo autocompletado (match_phrase_prefix en nombre)
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> suggest(String query) {
+        String url = elasticUrl + "/productos/_search";
+
+        String body = """
+            {
+              "query": {
+                "match_phrase_prefix": {
+                  "nombre": "%s"
+                }
+              },
+              "_source": ["id", "nombre", "imagen"] 
+            }
+            """.formatted(query);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "ApiKey " + elasticApiKey);
+
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
+        return elasticRest.postForObject(url, entity, Map.class);
+    }
+
+    /**
+     * ⏰ Reindexación automática cada 30 segundos
+     */
     @Scheduled(fixedDelay = 30000)
     public void autoReindex() {
         try {

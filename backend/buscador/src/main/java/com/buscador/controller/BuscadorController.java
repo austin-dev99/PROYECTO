@@ -36,7 +36,7 @@ public class BuscadorController {
         this.indexService = indexService;
     }
 
-    // 🔎 Buscar
+    // 🔎 Buscar productos
     @GetMapping("/search")
     public ResponseEntity<String> search(@RequestParam String q,
                                          @RequestParam(defaultValue = "20") int size) {
@@ -55,19 +55,20 @@ public class BuscadorController {
 
         try {
             System.out.println("🔹 Search query: " + q);
-            System.out.println("🔹 Elasticsearch POST: " + body);
             String response = elasticRest.postForObject(esUrl, entity(body), String.class);
             return ResponseEntity.ok(response);
         } catch (HttpClientErrorException e) {
-            System.err.println("❌ Elasticsearch returned error: " + e.getStatusCode());
-            return ResponseEntity.status(e.getStatusCode()).body("{\"status\":\"error\",\"message\":\"Elasticsearch error\"}");
+            System.err.println("❌ Elasticsearch error: " + e.getStatusCode());
+            return ResponseEntity.status(e.getStatusCode())
+                    .body("{\"status\":\"error\",\"message\":\"Elasticsearch error\"}");
         } catch (RestClientException e) {
             System.err.println("❌ Elasticsearch request failed: " + e.getMessage());
-            return ResponseEntity.status(502).body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
+            return ResponseEntity.status(502)
+                    .body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
         }
     }
 
-    // ✍ Autocompletar
+    // ✍ Autocompletar productos
     @GetMapping("/suggest")
     public ResponseEntity<String> suggest(@RequestParam String q) {
         String esUrl = elasticUrl + "/productos/_search";
@@ -78,48 +79,64 @@ public class BuscadorController {
                     "multi_match": {
                       "query": "%s",
                       "type": "bool_prefix",
-                      "fields": ["nombre.suggest", "nombre.suggest._2gram", "nombre.suggest._3gram"]
+                      "fields": [
+                        "nombre.suggest",
+                        "nombre.suggest._2gram",
+                        "nombre.suggest._3gram"
+                      ]
                     }
-                  }
+                  },
+                  "_source": ["id","nombre","imagen"]
                 }
                 """.formatted(q);
 
         try {
             System.out.println("🔹 Suggest query: " + q);
-            System.out.println("🔹 Elasticsearch POST: " + body);
             String response = elasticRest.postForObject(esUrl, entity(body), String.class);
             return ResponseEntity.ok(response);
         } catch (HttpClientErrorException e) {
-            System.err.println("❌ Elasticsearch returned error: " + e.getStatusCode());
-            return ResponseEntity.status(e.getStatusCode()).body("{\"status\":\"error\",\"message\":\"Elasticsearch error\"}");
+            System.err.println("❌ Elasticsearch error: " + e.getStatusCode());
+            return ResponseEntity.status(e.getStatusCode())
+                    .body("{\"status\":\"error\",\"message\":\"Elasticsearch error\"}");
         } catch (RestClientException e) {
             System.err.println("❌ Elasticsearch request failed: " + e.getMessage());
-            return ResponseEntity.status(502).body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
+            return ResponseEntity.status(502)
+                    .body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
         }
     }
 
-    // 📊 Facetas
+    // 📊 Facetas por categoría
     @GetMapping("/facets")
     public ResponseEntity<String> facets() {
         String esUrl = elasticUrl + "/productos/_search";
         String body = """
-                { "size": 0, "aggs": { "categorias": { "terms": { "field": "categoria.keyword" } } } }
+                {
+                  "size": 0,
+                  "aggs": {
+                    "categorias": { "terms": { "field": "categoria.keyword" } },
+                    "subcategorias": { "terms": { "field": "subcategoria.keyword" } }
+                  }
+                }
                 """;
         try {
             String response = elasticRest.postForObject(esUrl, entity(body), String.class);
             return ResponseEntity.ok(response);
         } catch (RestClientException e) {
             System.err.println("❌ Elasticsearch facets request failed: " + e.getMessage());
-            return ResponseEntity.status(502).body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
+            return ResponseEntity.status(502)
+                    .body("{\"status\":\"error\",\"message\":\"Application failed to respond\"}");
         }
     }
 
-    // 📥 Indexación manual
+    // 📥 Indexación manual desde Operador
     @PostMapping("/index-from-operador")
     public ResponseEntity<String> indexFromOperador() {
         int total = indexService.reindexAll();
-        if (total > 0) return ResponseEntity.ok("{\"status\":\"ok\",\"message\":\"Indexados " + total + " productos.\"}");
-        return ResponseEntity.status(500).body("{\"status\":\"error\",\"message\":\"No se indexaron productos.\"}");
+        if (total > 0) {
+            return ResponseEntity.ok("{\"status\":\"ok\",\"message\":\"Indexados " + total + " productos.\"}");
+        }
+        return ResponseEntity.status(500)
+                .body("{\"status\":\"error\",\"message\":\"No se indexaron productos.\"}");
     }
 
     // Utilidad para headers
