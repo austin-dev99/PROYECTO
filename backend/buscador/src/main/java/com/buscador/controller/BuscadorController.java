@@ -39,19 +39,29 @@ public class BuscadorController {
         this.indexService = indexService;
     }
 
-    // Health
     @GetMapping("/health")
     public String health() {
         return "OK";
     }
 
-    // ================== ENDPOINTS CRUDOS (se mantienen) ==================
+    // ================== /search ahora devuelve también items ==================
     @GetMapping("/search")
     public ResponseEntity<?> search(@RequestParam String q,
                                     @RequestParam(defaultValue = "20") int size) {
         System.out.println(">>> /buscador/search q=" + q + " size=" + size);
         try {
-            return ResponseEntity.ok(indexService.search(q, size));
+            Map<String,Object> raw = indexService.search(q, size);
+            List<Map<String,Object>> items = mapHits(raw);
+            long total = extractTotal(raw);
+            long took = ((Number) raw.getOrDefault("took", 0)).longValue();
+
+            // Mantengo la respuesta cruda y añado campos simplificados
+            Map<String,Object> enriched = new LinkedHashMap<>(raw);
+            enriched.put("items", items);
+            enriched.put("totalParsed", total);
+            enriched.put("tookParsed", took);
+
+            return ResponseEntity.ok(enriched);
         } catch (HttpClientErrorException e) {
             return handleEsClientError(e, "search");
         } catch (RestClientException e) {
@@ -60,24 +70,31 @@ public class BuscadorController {
         }
     }
 
+    // ================== /suggest añade items también ==================
     @GetMapping("/suggest")
     public ResponseEntity<?> suggest(@RequestParam String q) {
         if (q == null || q.trim().length() < 2) {
-            return ResponseEntity.ok(Map.of("hits", Map.of("hits", List.of())));
+            return ResponseEntity.ok(Map.of(
+                    "hits", Map.of("hits", List.of()),
+                    "items", List.of()
+            ));
         }
         System.out.println(">>> /buscador/suggest q=" + q);
         try {
-            return ResponseEntity.ok(indexService.suggest(q));
+            Map<String,Object> raw = indexService.suggest(q);
+            List<Map<String,Object>> items = mapHits(raw);
+            Map<String,Object> enriched = new LinkedHashMap<>(raw);
+            enriched.put("items", items);
+            return ResponseEntity.ok(enriched);
         } catch (HttpClientErrorException e) {
             return handleEsClientError(e, "suggest");
         } catch (RestClientException e) {
             return ResponseEntity.status(502)
-                    .body(Map.of("status", "error", "message", "Falló petición a Elasticsearch"));
+                    .body(Map.of("status","error","message","Falló petición a Elasticsearch"));
         }
     }
 
-    // ================== NUEVOS ENDPOINTS SIMPLES ==================
-
+    // ================== Endpoints simples (siguen disponibles) ==================
     @GetMapping("/search-simple")
     public ResponseEntity<?> searchSimple(@RequestParam String q,
                                           @RequestParam(defaultValue = "20") int size) {
@@ -116,7 +133,6 @@ public class BuscadorController {
         }
     }
 
-    // ================== FACETS / REINDEX ==================
     @GetMapping("/facets")
     public ResponseEntity<?> facets() {
         String esUrl = elasticUrl + "/productos/_search";
@@ -150,7 +166,7 @@ public class BuscadorController {
                 .body(Map.of("status","error","message","No se indexaron productos"));
     }
 
-    // ================== HELPERS ==================
+    // ================== Helpers ==================
     private List<Map<String,Object>> mapHits(Map<String,Object> raw) {
         if (raw == null) return List.of();
         Object hitsObj = raw.get("hits");
