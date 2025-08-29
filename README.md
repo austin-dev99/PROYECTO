@@ -286,3 +286,96 @@ Si tienes errores al iniciar la aplicación con mensajes sobre configuraciones o
 
 1. Actualiza las propiedades de configuración como se indica en los mensajes de advertencia
 2. Para Spring Cloud Gateway, usa las nuevas propiedades (ejemplo: cambiar `spring.cloud.gateway.discovery.locator.enabled` a `spring.cloud.gateway.server.webflux.discovery.locator.enabled`)
+
+
+INDEX PARA MAPPEAR EN ELASTIC
+
+EJECUTAR EN BASH
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Configura estas variables antes de ejecutar
+ELASTIC_URL="${ELASTIC_URL:-https://ff181e840976497cbdace600256e7012.us-east-2.aws.elastic-cloud.com:443}"
+API_KEY="${ELASTIC_API_KEY:-RGo2bDdaZ0JTcWVDaDF0Y1VaZHY6cHo3XzRTVWNhUlNqaC1vQzNERWRhQQ==}"
+APP_BASE_URL="${APP_BASE_URL:-https://railway.com/project/55bb99e6-e4ad-4459-af1e-4e0ebde5e34b/service/c22eea9e-0696-46ba-b3af-2af996554b70?environmentId=3880c305-5505-48cf-b5fe-c23208c4fa11&id=dd850d93-23d7-41a3-a7c1-b9cda558d044#deploy}"  # Cambia a tu dominio Railway si hace falta
+INDEX="productos"
+
+echo "⚠️ Asegúrate de haber ROTADO la API Key si fue expuesta."
+read -p "¿Continuar? (yes/no) " confirm
+[ "$confirm" != "yes" ] && echo "Abortado." && exit 1
+
+echo "🔴 Eliminando índice $INDEX ..."
+curl -sS -X DELETE \
+  -H "Authorization: ApiKey $API_KEY" \
+  "${ELASTIC_URL}/${INDEX}" || true
+echo
+echo "✅ Eliminado (o no existía)."
+
+echo "🆕 Creando índice $INDEX ..."
+curl -sS -X PUT \
+  -H "Authorization: ApiKey $API_KEY" \
+  -H "Content-Type: application/json" \
+  "${ELASTIC_URL}/${INDEX}" -d @- <<'JSON'
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "folding_analyzer": {
+          "tokenizer": "standard",
+          "filter": ["lowercase","asciifolding"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id":        { "type": "keyword" },
+      "nombre": {
+        "type": "text",
+        "analyzer": "folding_analyzer",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 },
+          "suggest": { "type": "search_as_you_type" }
+        }
+      },
+      "descripcion": {
+        "type": "text",
+        "analyzer": "folding_analyzer",
+        "fields": {
+          "keyword": { "type": "keyword", "ignore_above": 256 }
+        }
+      },
+      "categoria": {
+        "type": "text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "subcategoria": {
+        "type": "text",
+        "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+      },
+      "imagen": { "type": "keyword", "ignore_above": 512 },
+      "precio": { "type": "float" },
+      "updated_at": { "type": "date", "format": "strict_date_optional_time||epoch_millis" }
+    }
+  }
+}
+JSON
+echo
+echo "✅ Índice creado."
+
+echo "🚀 Lanzando reindex via API de la app..."
+curl -sS -X POST "${APP_BASE_URL}/index-from-operador"
+echo
+echo "🔍 Verificando conteo de documentos..."
+curl -sS -H "Authorization: ApiKey $API_KEY" \
+  "${ELASTIC_URL}/${INDEX}/_count"
+echo
+echo "🤖 Probando búsqueda básica..."
+curl -sS -H "Authorization: ApiKey $API_KEY" \
+  -H "Content-Type: application/json" \
+  "${ELASTIC_URL}/${INDEX}/_search" -d '{"size":1,"query":{"match_all":{}}}'
+echo
+echo "💡 Probando suggest (desde app si está deployada)..."
+curl -sS "${APP_BASE_URL}/suggest?q=pro"
+echo
+echo "✅ Proceso completado."
